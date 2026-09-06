@@ -1,7 +1,13 @@
-# Security review: demo 0.1.0
+# Security review: demo 0.1.1
 
 Reviewed on 2026-09-06 for theme API 1. Scope: all package PHP entry points,
 templates, browser scripts, settings and locale resources.
+
+The 0.1.1 update adds visitor unit selection through the core's validated
+profiles. Unit labels are escaped in HTML and passed to tooltips as text. Polling
+pins the displayed profile; forecasts, climate values and chart gaps were
+verified in Docker. PHPStan passed for the package runtime. No dependencies
+changed since the 0.1.0 audit below.
 
 | Area | Result |
 | --- | --- |

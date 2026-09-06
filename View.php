@@ -29,7 +29,7 @@ final class View
     public readonly Value $liveTemperature;
     public readonly Forecast $forecast;
     public readonly ?Report $climate;
-    public readonly ?float $altitude;
+    public readonly Value $altitude;
     public readonly ?float $latitude;
     public readonly ?float $longitude;
 
@@ -38,10 +38,10 @@ final class View
         $this->range = $range === '7d' ? '7d' : '24h';
         $this->name = $wx->configuration()->name;
         $this->zone = $wx->configuration()->timezone;
-        $this->altitude = $wx->configuration()->altitude?->in('meter');
+        $altitude = new Value($wx->configuration()->altitude?->in('meter'), 'meter', 'group_altitude');
+        $this->altitude = $altitude->to($theme->output()->units['group_altitude'])->withOutput($theme->output());
         $this->latitude = $wx->configuration()->latitude;
         $this->longitude = $wx->configuration()->longitude;
-        $language = $theme->language;
         /** @var array<string, Query> $queries */
         $queries = require __DIR__ . '/data.php';
         $wx->syncTheme('demo', $queries);
@@ -66,10 +66,10 @@ final class View
         $temperature = $this->value('temperature');
         $this->status = $temperature->raw === null
             ? ($temperature->status === 'pending' ? $this->theme->text('Calculating readings') : $this->theme->text('Readings unavailable')) : '';
-        $this->liveTemperature = $wx->live('outTemp')->to('degree_C');
-        $this->forecast = new Forecast($wx->output(new \WeewxPhp\Frontend\Output($theme->language, decimals: [
+        $this->liveTemperature = $wx->live('outTemp');
+        $this->forecast = new Forecast($wx->output($theme->output(new \WeewxPhp\Frontend\Output($theme->language, decimals: [
             'group_temperature' => 0, 'group_speed' => 0, 'group_percent' => 0,
-        ])));
+        ]))));
         $climate = $wx->hasTag('climate.normal') ? $wx->tag('climate.normal') : null;
         $this->climate = $climate instanceof Report && $climate->status !== 'disabled' ? $climate : null;
     }
@@ -90,6 +90,16 @@ final class View
         return $this->value($key)->html(label: false);
     }
 
+    public function unitLabel(string $key): string
+    {
+        return self::escape($this->value($key)->unitLabel());
+    }
+
+    public function sensorHeight(): Value
+    {
+        return (new Value(2, 'meter', 'group_altitude'))->to($this->theme->output()->units['group_altitude'])->withOutput($this->theme->output());
+    }
+
     public function date(?int $timestamp, string $format = 'd.m.Y · H:i'): string
     {
         if ($this->theme->language !== 'de') {
@@ -107,14 +117,14 @@ final class View
     }
 
     /** @return list<array{start: int, end: int, value: float|null}> */
-    public function points(string $key, string $unit): array
+    public function points(string $key, ?string $unit = null): array
     {
         $series = $this->data[$key] ?? null;
         if (!$series instanceof Series || $series->unit === null) {
             return [];
         }
         $points = [];
-        foreach ($series->to($unit)->points as $point) {
+        foreach (($unit === null ? $series : $series->to($unit))->points as $point) {
             $raw = $point['value'];
             $points[] = ['start' => $point['start'], 'end' => $point['end'], 'value' => is_int($raw) || is_float($raw) ? (float) $raw : null];
         }
@@ -137,7 +147,7 @@ final class View
                 $formatted[$name] = $value->format(label: false);
             }
         }
-        return ['data' => $this->data, 'formatted' => $formatted, 'updated' => $this->updated,
+        return ['unitProfile' => $this->theme->units->profile, 'data' => $this->data, 'formatted' => $formatted, 'updated' => $this->updated,
             'updatedLabel' => $this->date($this->updated), 'live' => $this->liveTemperature,
             'liveLabel' => $this->liveTemperature->format(), 'status' => $this->status,
             'atmosphere' => $this->atmosphere(),
@@ -168,7 +178,7 @@ final class View
     }
 
     /** The scene uses current forecast conditions, never a whole day's weather code.
-     * @return array{kind: string, phase: string, label: string, source: string, sunrise: int|null, sunset: int|null, wind: float}
+     * @return array{kind: string, phase: string, label: string, source: string, sunrise: int|null, sunset: int|null, wind: float, temperature: float|null}
      */
     public function atmosphere(?int $now = null): array
     {
@@ -208,9 +218,14 @@ final class View
                 'day' => $this->theme->text('Daytime'), 'twilight' => $this->theme->text('Twilight'), default => $this->theme->text('Nighttime')
             };
         }
-        $wind = $this->value('wind')->raw;
+        // Scene physics uses fixed units even when the visitor changes display units.
+        $wind = $this->value('wind');
+        $wind = $wind->unit === null ? null : $wind->to('km_per_hour')->raw;
+        $temperature = $this->value('temperature');
+        $temperature = $temperature->unit === null ? null : $temperature->to('degree_C')->raw;
         return ['kind' => $kind, 'phase' => $phase, 'label' => $label, 'source' => $source,
-            'sunrise' => $rise, 'sunset' => $set, 'wind' => is_numeric($wind) ? (float) $wind : 0.0];
+            'sunrise' => $rise, 'sunset' => $set, 'wind' => is_numeric($wind) ? (float) $wind : 0.0,
+            'temperature' => is_numeric($temperature) ? (float) $temperature : null];
     }
 
     /**
@@ -219,7 +234,7 @@ final class View
      */
     public function chart(): array
     {
-        $points = $this->points('temperature' . $this->range, 'degree_C');
+        $points = $this->points('temperature' . $this->range);
         $values = [];
         foreach ($points as $point) {
             if ($point['value'] !== null) {

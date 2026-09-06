@@ -115,5 +115,12 @@
   "weekday.wed": "Mi",
   "weekday.thu": "Do",
   "weekday.fri": "Fr",
-  "weekday.sat": "Sa"
+  "weekday.sat": "Sa",
+  "above sea level": "über dem Meeresspiegel",
+  "Apply": "Anwenden",
+  "Metric": "Metrisch",
+  "Metric (m/s)": "Metrisch (m/s)",
+  "Station default": "Stationsstandard",
+  "Units": "Einheiten",
+  "US": "US"
 }

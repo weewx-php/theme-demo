@@ -3,16 +3,17 @@
 declare(strict_types=1);
 
 use WeewxPhp\Frontend\Output;
+use WeewxPhp\Frontend\Theme;
 use WeewxPhp\Frontend\Weather;
 
 if (!isset($wx) || !$wx instanceof Weather) {
     throw new \LogicException('The data definition requires a Weather context');
 }
-$wx = $wx->output(new Output(
-    $language ?? 'en',
-    units: ['group_temperature' => 'degree_C', 'group_rain' => 'mm', 'group_rainrate' => 'mm_per_hour', 'group_speed' => 'km_per_hour', 'group_pressure' => 'mbar'],
-    decimals: ['group_percent' => 0, 'group_pressure' => 0],
-))->reference('archive');
+$theme = isset($theme) && $theme instanceof Theme ? $theme : new Theme();
+$wx = $wx->output($theme->output(new Output(
+    $theme->language === 'de' ? 'de' : 'en',
+    decimals: ['group_percent' => 0, 'mbar' => 0],
+)))->reference('archive');
 return [
     'updated' => $wx->current('dateTime'),
     'temperature' => $wx->current('outTemp'),

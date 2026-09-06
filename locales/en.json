@@ -115,5 +115,12 @@
   "weekday.wed": "Wed",
   "weekday.thu": "Thu",
   "weekday.fri": "Fri",
-  "weekday.sat": "Sat"
+  "weekday.sat": "Sat",
+  "above sea level": "above sea level",
+  "Apply": "Apply",
+  "Metric": "Metric",
+  "Metric (m/s)": "Metric (m/s)",
+  "Station default": "Station default",
+  "Units": "Units",
+  "US": "US"
 }

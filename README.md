@@ -34,7 +34,12 @@ php bin/weewx-php analytics run
 
 The regular tick maintains prepared queries. Missing results display a dash;
 data gaps remain gaps. Larger archives may require multiple worker runs.
-Readings use °C, km/h, hPa and mm regardless of archive units. Archive periods
+Choose **Units → Apply** to switch the display; **Station default** restores the
+site default. The core remembers the selection independently of language and
+applies it to readings, charts, live data, forecasts, climate values and altitude.
+Configure the site default with `[Themes] units`; the core reference is
+`docs/display-units.md`. This version requires a core with `UnitPreferences` and
+`Theme::output()` support. Archive periods
 follow the latest archived reading, while sunrise and sunset use the current
 local calendar day. English is the default language; select German in the theme
 settings or set `language = de` in `[Themes][[demo]]`.

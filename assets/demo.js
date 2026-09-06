@@ -302,7 +302,7 @@
             const point = points[index];
             if (!point) return;
             tooltip.hidden = false;
-            tooltip.textContent = `${point.time} · ${point.value}${point.y === null ? '' : ' °C'}`;
+            tooltip.textContent = `${point.time} · ${point.value}${point.y === null ? '' : ' ' + chart.dataset.unit}`;
             crosshair.setAttribute('x1', point.x); crosshair.setAttribute('x2', point.x); crosshair.setAttribute('visibility', 'visible');
             cursor.setAttribute('visibility', point.y === null ? 'hidden' : 'visible');
             cursor.setAttribute('cx', point.x); if (point.y !== null) cursor.setAttribute('cy', point.y);
@@ -378,9 +378,11 @@
         const timeout = setTimeout(() => controller.abort(), 10000);
         try {
             const range = document.querySelector('.range a[aria-current]')?.getAttribute('href')?.includes('range=7d') ? '7d' : '24h';
-            const response = await fetch(`data.php?range=${range}`, {signal: controller.signal, cache: 'no-store'});
+            const units = document.body.dataset.units;
+            const response = await fetch(`data.php?range=${range}&units=${encodeURIComponent(units)}`, {signal: controller.signal, cache: 'no-store'});
             if (!response.ok) throw new Error('unavailable');
             const snapshot = await response.json();
+            if (snapshot.unitProfile !== units) throw new Error('unit profile mismatch');
             for (const element of document.querySelectorAll('[data-value]')) {
                 const text = snapshot.formatted[element.dataset.value];
                 if (typeof text === 'string' && element.textContent !== text) {
@@ -393,14 +395,16 @@
             if (live) { live.hidden = snapshot.live.value === null; live.textContent = `Live: ${snapshot.liveLabel}${snapshot.live.status === 'stale' ? t(' · stale') : ''}`; }
             const status = document.querySelector('[data-refresh-status]');
             if (status) { status.textContent = snapshot.status; status.hidden = snapshot.status === ''; }
-            const temperature = snapshot.data.temperature?.value;
+            const temperature = snapshot.atmosphere?.temperature;
             document.querySelector('.hero').dataset.temperature = Number.isFinite(temperature) ? String(temperature) : '';
             if (snapshot.atmosphere) { liveScene = snapshot.atmosphere; setScene(); }
             const nextStamp = JSON.stringify([snapshot.updated, snapshot.forecast, snapshot.climate, ...Object.values(snapshot.data).map(value => value.computedAt ?? value.periods?.computedAt)]);
             if (stamp !== null && stamp !== nextStamp) {
                 // Preserve an active chart/table interaction; update after it finishes.
                 if (dialog.open || document.activeElement?.closest('[data-chart], details')) return;
-                const page = await fetch(`${location.pathname}${location.search}`, {signal: controller.signal, cache: 'no-store'});
+                const pageUrl = new URL(location.href);
+                pageUrl.searchParams.set('units', units);
+                const page = await fetch(pageUrl, {signal: controller.signal, cache: 'no-store'});
                 if (!page.ok) throw new Error('unavailable');
                 const parsed = new DOMParser().parseFromString(await page.text(), 'text/html');
                 const nextMain = parsed.querySelector('main');
