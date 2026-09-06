@@ -1,0 +1,7 @@
+{
+  "id": "demo",
+  "version": "0.1.0",
+  "api": 1,
+  "php": "8.1",
+  "license": "GPL-3.0-or-later"
+}

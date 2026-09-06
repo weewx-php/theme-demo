@@ -1,0 +1,16 @@
+name: weewx-theme-demo
+
+services:
+  unit:
+    image: weewx-php-tests
+    volumes:
+      - ${WEEWX_PHP_ROOT:?Set WEEWX_PHP_ROOT to the core checkout}:/repo:ro
+      - ../..:/theme:ro
+    tmpfs:
+      - /tmp
+    working_dir: /theme
+    network_mode: none
+    environment:
+      WEEWX_PHP_ROOT: /repo
+      WEEWX_PHP_TMP: /tmp
+    command: ["/opt/build/vendor/bin/phpunit", "--no-configuration", "--do-not-cache-result", "--bootstrap", "tests/bootstrap.php", "tests"]

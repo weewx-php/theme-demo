@@ -1,0 +1,26 @@
+{
+  "theme": "demo",
+  "schema_version": 1,
+  "fields": [
+    {
+      "key": "language",
+      "type": "select",
+      "label": "settings.language",
+      "default": "en",
+      "options": {
+        "en": "language.en",
+        "de": "language.de"
+      }
+    },
+    {
+      "key": "default_range",
+      "type": "select",
+      "label": "settings.default_range",
+      "default": "24h",
+      "options": {
+        "24h": "range.day",
+        "7d": "range.week"
+      }
+    }
+  ]
+}
